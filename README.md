@@ -1,182 +1,209 @@
-# A Monte Carlo Framework for Estimating Combo Accessibility in a Finite Card Deck
+# Monte Carlo Estimation of Combo Accessibility in a Finite Card Deck
+
+![method](https://img.shields.io/badge/method-Monte%20Carlo-blue)
+![probability](https://img.shields.io/badge/probability-frequentist-green)
+![status](https://img.shields.io/badge/status-research--grade-orange)
+
+---
+
+## Table of Contents
+1. [Abstract](#abstract)
+2. [Probability Space](#probability-space)
+3. [Random Variables and Events](#random-variables-and-events)
+4. [Deterministic Base Events](#deterministic-base-events)
+5. [Deterministic Enabling Effects](#deterministic-enabling-effects)
+6. [Stochastic Effect: Excavate6](#stochastic-effect-excavate6)
+7. [Final Combo Probability](#final-combo-probability)
+8. [Aggregation and Independence Assumption](#aggregation-and-independence-assumption)
+9. [Global Monte Carlo Estimator](#global-monte-carlo-estimator)
+10. [Proof Sketches](#proof-sketches)
+11. [Discussion and Limitations](#discussion-and-limitations)
+
+---
 
 ## Abstract
 
-We present a probabilistic framework for estimating the accessibility of predefined card combinations (“combos”) from an initial hand drawn from a finite deck. The method combines deterministic logical conditions with stochastic estimation via Monte Carlo sampling. Conditional probabilities induced by card effects are approximated by frequentist estimators, and global success probabilities are aggregated under an explicit (approximate) independence assumption. We formalize the model using measure-theoretic probability and provide consistency results.
+This repository formalizes a Monte Carlo framework for estimating the probability that a predefined card combo is accessible from a random initial hand. The model combines deterministic logical conditions with stochastic card-reveal effects and approximates conditional probabilities via frequentist estimators. Consistency properties are discussed under explicit modeling assumptions.
 
 ---
 
-## 1. Introduction
+## Probability Space
 
-Let a deck-based game be defined by a finite multiset of cards and a set of combo-defining rules. Given a random initial hand, we aim to estimate the probability that at least one combo is accessible, accounting for deterministic enabling effects and stochastic effects that reveal additional cards.
+### Deck
 
----
+Let the deck be a finite set of cards:
 
-## 2. Probability Space
-
-### 2.1 Deck and Card Space
-
-Let the deck be a finite set:
 $$
 D = \{c_1, c_2, \dots, c_{40}\}.
 $$
 
-Each card is a tuple:
+Each card is represented as a tuple:
+
 $$
 c = (n, a, t, \ell, \alpha, \delta, \kappa),
 $$
-where:
-- $n$ is the name,
-- $a$ the attribute,
-- $t$ the type,
-- $\ell$ the level,
-- $\alpha$ the attack,
-- $\delta$ the defense,
-- $\kappa \in \{\text{monster}, \text{st}\}$ the category.
+
+where `n` is the name, `a` the attribute, `t` the type, `ℓ` the level, `α` the attack, `δ` the defense, and `κ` the category.
 
 ---
 
-### 2.2 Sample Space of Hands
+### Hands
 
-Define the sample space:
+The sample space of opening hands is:
+
 $$
 \Omega = \{ H \subseteq D : |H| = 5 \}.
 $$
 
-Equip $\Omega$ with the uniform probability measure:
+We equip $\Omega$ with the uniform probability measure:
+
 $$
 \mathbb{P}(H) = \frac{1}{\binom{40}{5}}.
 $$
 
----
+Hands are sampled i.i.d.:
 
-## 3. Random Variables and Events
-
-For each combo $C \in \{R, M, H\}$ (Razen, Madlove, Holy Sue), define an indicator random variable:
 $$
-\mathbf{1}_C : \Omega \to \{0,1\},
-$$
-where $\mathbf{1}_C(H)=1$ iff combo $C$ is accessible from hand $H$.
-
----
-
-## 4. Deterministic Base Events
-
-### Definition 4.1 (Base Event)
-
-Let $F(H)$ and $D(H)$ denote the number of Fire and Dark monsters in $H$, respectively.
-
-- **Razen base event**
-$$
-R_{\text{base}} = \{H : \text{Razen}\in H \land (F(H)\ge2 \lor D(H)\ge1)\}.
-$$
-
-- **Madlove base event**
-$$
-M_{\text{base}} = \{H : \text{Madlove}\in H \land F(H)\ge1\}.
-$$
-
-- **Holy Sue base event**
-$$
-H_{\text{base}} = \{H : \text{Holy Sue}\in H \land F(H)\ge1 \land D(H)\ge1\}.
-$$
-
-Each base event is deterministic:
-$$
-\mathbb{P}(C \mid H) \in \{0,1\}.
+H_1, \dots, H_N \sim \text{Uniform}(\Omega).
 $$
 
 ---
 
-## 5. Deterministic Enabling Events
+## Random Variables and Events
 
-Let $D_H = D \setminus H$ denote the remaining deck.
-
-### Definition 5.1 (AttrSS Enable)
-
-For a target combo $C$:
-$$
-C_{\text{AttrSS}} = \{H : \text{AttrSS}\in H \land \exists\ \text{required attribute in } H \land \text{target}\in D_H\}.
-$$
-
-### Definition 5.2 (AddRazen Enable)
+For each combo $C \in \{R, M, H\}$ (Razen, Madlove, Holy Sue), define the indicator random variable:
 
 $$
-R_{\text{Add}} = \{H : \text{AddRazen}\in H \land (F(H)\ge1 \lor D(H)\ge1) \land \text{Razen}\in D_H\}.
+\mathbf{1}_C(H) =
+\begin{cases}
+1 & \text{if combo } C \text{ is accessible from } H, \\
+0 & \text{otherwise}.
+\end{cases}
 $$
 
-### Definition 5.3 (MultiTutor Enable)
+---
+
+## Deterministic Base Events
+
+Let $F(H)$ and $D(H)$ denote the number of Fire and Dark monsters in $H$.
+
+### Razen
+
+$$
+R_{\text{base}} =
+\{ H : \text{Razen} \in H \land (F(H)\ge2 \lor D(H)\ge1) \}.
+$$
+
+### Madlove
+
+$$
+M_{\text{base}} =
+\{ H : \text{Madlove} \in H \land F(H)\ge1 \}.
+$$
+
+### Holy Sue
+
+$$
+H_{\text{base}} =
+\{ H : \text{Holy Sue} \in H \land F(H)\ge1 \land D(H)\ge1 \}.
+$$
+
+These events are deterministic: once $H$ is fixed, their probability is either 0 or 1.
+
+---
+
+## Deterministic Enabling Effects
+
+Let $D_H = D \setminus H$ be the remaining deck.
+
+### AttrSS
+
+For target combo $C$:
+
+$$
+C_{\text{AttrSS}} =
+\{ H : \text{AttrSS} \in H \land
+\exists \text{ required attribute in } H
+\land \text{target} \in D_H \}.
+$$
+
+### AddRazen
+
+$$
+R_{\text{Add}} =
+\{ H : \text{AddRazen} \in H \land
+(F(H)\ge1 \lor D(H)\ge1)
+\land \text{Razen} \in D_H \}.
+$$
+
+### MultiTutor
 
 Define a binary relation:
+
 $$
-\operatorname{match}_1(c_i,c_j)=1
+\operatorname{match}_1(c_i, c_j) = 1
 $$
-iff $c_i$ and $c_j$ share exactly one attribute among $\{a,t,\ell,\alpha,\delta\}$.
+
+iff $c_i$ and $c_j$ share **exactly one** property among
+$\{a,t,\ell,\alpha,\delta\}$.
 
 The MultiTutor event for target $T$ is:
+
 $$
 \exists m\in H,\ d\in D_H,\ t\in T :
-\operatorname{match}_1(m,d)=1 \land \operatorname{match}_1(d,t)=1.
-$$
-
-All enabling events above satisfy:
-$$
-\mathbb{P}(C \mid H)=1 \quad \text{if } H \in C_{\text{enable}}.
+\operatorname{match}_1(m,d)=1
+\land \operatorname{match}_1(d,t)=1.
 $$
 
 ---
 
-## 6. Stochastic Effect: Excavate6
+## Stochastic Effect: Excavate6
 
-### 6.1 Conditional Probability Space
+### Conditional Sampling
 
-Given $H$, define the random variable:
+Given a hand $H$, define:
+
 $$
-S \sim \text{Uniform}\{S \subset D_H : |S|=6\}.
+S \sim \text{Uniform}\{ S \subset D_H : |S| = 6 \}.
 $$
 
-Define:
+Define the Bernoulli random variable:
+
 $$
 X_C(H,S) =
 \begin{cases}
-1 & \exists c\in S : \text{adding } c \text{ enables } C, \\
+1 & \exists c \in S : \text{adding } c \text{ enables } C, \\
 0 & \text{otherwise}.
 \end{cases}
 $$
 
 The true conditional probability is:
+
 $$
-p_C(H) = \mathbb{P}(X_C=1 \mid H).
-$$
-
----
-
-### 6.2 Monte Carlo Estimator
-
-The program computes:
-$$
-\hat{p}_C(H) = \frac{1}{K}\sum_{i=1}^K X_C(H,S_i),
-$$
-where $S_1,\dots,S_K$ are i.i.d. samples and $K=40$.
-
----
-
-### Proposition 6.1 (Consistency)
-
-By the Strong Law of Large Numbers:
-$$
-\hat{p}_C(H) \xrightarrow[K\to\infty]{a.s.} p_C(H).
+p_C(H) = \mathbb{P}(X_C = 1 \mid H).
 $$
 
 ---
 
-## 7. Final Combo Probability
+### Monte Carlo Estimator
 
-### Definition 7.1
+The program estimates $p_C(H)$ via:
+
+$$
+\hat{p}_C(H) =
+\frac{1}{K} \sum_{i=1}^{K} X_C(H,S_i),
+$$
+
+with $K=40$ i.i.d. samples.
+
+---
+
+## Final Combo Probability
 
 For combo $C$:
+
 $$
-P(C\mid H) =
+P(C \mid H) =
 \begin{cases}
 1 & H \in C_{\text{base}} \cup C_{\text{enable}}, \\
 \hat{p}_C(H) & \text{otherwise}.
@@ -185,61 +212,93 @@ $$
 
 ---
 
-## 8. Aggregation of Combo Events
+## Aggregation and Independence Assumption
 
-### Assumption 8.1 (Approximate Independence)
+The model assumes approximate independence:
 
-The model assumes:
 $$
 R \perp M \perp H.
 $$
 
----
+Thus, the probability that **no combo** is accessible is:
 
-### Definition 8.2 (No-Combo Probability)
-
-Let:
 $$
-p_R=P(R\mid H),\quad p_M=P(M\mid H),\quad p_H=P(H\mid H).
-$$
-
-Then:
-$$
-P(\text{none}\mid H)=(1-p_R)(1-p_M)(1-p_H).
+P(\text{none} \mid H) =
+(1-p_R)(1-p_M)(1-p_H).
 $$
 
 ---
 
-## 9. Global Monte Carlo Estimation
+## Global Monte Carlo Estimator
 
-Let $H_1,\dots,H_N$ be i.i.d. samples from $\Omega$.
+Let $H_1,\dots,H_N$ be sampled hands.
 
-### Definition 9.1
-
-The estimator for combo $C$ is:
 $$
-\hat{P}(C)=\frac{1}{N}\sum_{i=1}^N P(C\mid H_i).
+\hat{P}(C) =
+\frac{1}{N} \sum_{i=1}^{N} P(C \mid H_i).
 $$
 
 ---
 
-### Proposition 9.2 (Global Consistency)
+## Proof Sketches
 
-As $N\to\infty$:
+### Proposition 1 — Consistency of Excavate6 Estimator
+
+For fixed $H$:
+
 $$
-\hat{P}(C)\xrightarrow{a.s.}\mathbb{E}[\mathbf{1}_C].
+\hat{p}_C(H) \xrightarrow[K\to\infty]{a.s.} p_C(H).
 $$
+
+**Sketch.**  
+Conditioned on $H$, the variables $X_C(H,S_i)$ are i.i.d. Bernoulli with
+mean $p_C(H)$. The Strong Law of Large Numbers applies directly. ∎
 
 ---
 
-## 10. Discussion
+### Proposition 2 — Consistency of Global Estimator
 
-- The estimator is **consistent but biased** due to the independence assumption.
-- Deterministic and stochastic components are cleanly separated.
-- The framework is extensible to exact enumeration or dependency-aware models.
+$$
+\hat{P}(C) \xrightarrow[N\to\infty]{a.s.}
+\mathbb{E}[\mathbf{1}_C].
+$$
+
+**Sketch.**  
+$P(C\mid H)$ is bounded in $[0,1]$ and integrable. The estimator is an
+empirical mean over i.i.d. samples, hence converges almost surely. ∎
 
 ---
 
-## Keywords
+### Proposition 3 — Bias from Independence Assumption
 
-Monte Carlo simulation; conditional probability; finite probability space; card games; stochastic estimation.
+If $R,M,H$ are not independent:
+
+$$
+(1-p_R)(1-p_M)(1-p_H)
+\neq \mathbb{P}(R^c \cap M^c \cap H^c).
+$$
+
+**Sketch.**  
+The true joint probability expands via inclusion–exclusion. The product
+formula implicitly drops all covariance terms, which are non-zero when
+combos share cards or attributes. ∎
+
+---
+
+## Discussion and Limitations
+
+- The estimator is **consistent but biased** with respect to the true game.
+- Bias arises from:
+  - independence assumption,
+  - finite Excavate sampling,
+  - logical simplifications.
+- The framework is suitable for:
+  - sensitivity analysis,
+  - deck optimization,
+  - extension to dependency-aware models.
+
+---
+
+## License
+
+This document is provided for research and educational purposes.
