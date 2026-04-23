@@ -141,7 +141,7 @@ $$
 Define a binary relation:
 
 $$
-\operatorname{match}_1(c_i, c_j) = 1
+\mathrm{match}_1(c_i, c_j) = 1
 $$
 
 iff $c_i$ and $c_j$ share **exactly one** property among
@@ -151,8 +151,8 @@ The MultiTutor event for target $T$ is:
 
 $$
 \exists m\in H,\ d\in D_H,\ t\in T :
-\operatorname{match}_1(m,d)=1
-\land \operatorname{match}_1(d,t)=1.
+\mathrm{match}_1(m,d)=1
+\land \mathrm{match}_1(d,t)=1.
 $$
 
 ---
