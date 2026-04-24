@@ -1,4 +1,4 @@
-# Monte Carlo Estimation of Combo Accessibility in a Finite Card Deck
+# A simple tool that calculates the probability of seeing a combo in vanquish soul (K9 combos not integrated)
 
 ![method](https://img.shields.io/badge/method-Monte%20Carlo-blue)
 ![probability](https://img.shields.io/badge/probability-frequentist-green)
